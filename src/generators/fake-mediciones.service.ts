@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -6,7 +6,7 @@ import { Sensor } from '../sensores/entities/sensor.entity';
 import { Medicion } from '../mediciones/entities/medicion.entity';
 
 @Injectable()
-export class FakeMedicionesService {
+export class FakeMedicionesService implements OnModuleInit {
   private readonly logger = new Logger(FakeMedicionesService.name);
   
   constructor(
@@ -16,12 +16,28 @@ export class FakeMedicionesService {
     private medicionesRepository: Repository<Medicion>,
   ) {}
 
+  // Este método se ejecuta cuando el módulo se inicializa
+  async onModuleInit() {
+    this.logger.log('🕒 FakeMedicionesService inicializado. Cron job configurado para ejecutarse cada hora.');
+    
+    // Generar datos históricos al inicio para asegurar que hay datos disponibles
+    await this.generateHistoricalData();
+    
+    // También ejecutar inmediatamente para verificar que funciona
+    await this.generateHourlyMediciones();
+  }
+
   /**
    * Genera mediciones falsas para todos los sensores cada hora, pero genera datos
    * como si se hubieran tomado cada 15 minutos durante esa hora.
    * Simula patrones de consumo basados en la hora del día.
-   */
-  @Cron(CronExpression.EVERY_HOUR) // Ejecutar cada hora
+  */
+
+  // Cron que se ejecuta cada hora, todos los días (formato: segundo minuto hora día-del-mes mes día-de-la-semana)
+  @Cron('0 0 * * * *', {
+    name: 'hourlyMedicionesGenerator',
+    timeZone: 'America/Mexico_City' // Ajusta a tu zona horaria
+  })
   async generateHourlyMediciones() {
     try {
       this.logger.log('Iniciando generación de mediciones cada 15 minutos para la hora actual...');
