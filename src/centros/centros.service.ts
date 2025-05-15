@@ -12,11 +12,6 @@ export class CentrosService {
     private centrosRepository: Repository<Centro>,
   ) {}
 
-  async create(createCentroDto: CreateCentroDto): Promise<Centro> {
-    const centro = this.centrosRepository.create(createCentroDto);
-    return this.centrosRepository.save(centro);
-  }
-
   async findAll(): Promise<Centro[]> {
     return this.centrosRepository.find();
   }

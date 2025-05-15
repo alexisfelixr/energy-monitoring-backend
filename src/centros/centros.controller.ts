@@ -10,14 +10,6 @@ import { Centro } from './entities/centro.entity';
 export class CentrosController {
   constructor(private readonly centrosService: CentrosService) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Crear nuevo centro de trabajo' })
-  @ApiResponse({ status: 201, description: 'Centro creado exitosamente', type: Centro })
-  @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async create(@Body() createCentroDto: CreateCentroDto): Promise<Centro> {
-    return this.centrosService.create(createCentroDto);
-  }
-
   @Get()
   @ApiOperation({ summary: 'Obtener todos los centros de trabajo' })
   @ApiResponse({ status: 200, description: 'Lista de centros', type: [Centro] })
