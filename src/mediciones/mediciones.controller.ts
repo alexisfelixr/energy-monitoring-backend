@@ -145,6 +145,7 @@ export class MedicionesController {
     @Param('centroId') centroId: string,
     @Query('desde') desde?: string,
     @Query('timezoneOffset') timezoneOffset?: string,
+    @Query('timezone') timezone?: string,
   ): Promise<any> {
     const numericId = Number(centroId);
     
@@ -152,6 +153,6 @@ export class MedicionesController {
       // throw new NotFoundException(`ID de centro inválido: ${centroId}`);
     }
     
-    return this.medicionesService.getCentroMonitoringData(numericId, desde, timezoneOffset);
+    return this.medicionesService.getCentroMonitoringData(numericId, desde, timezoneOffset, timezone);
   }
 }
