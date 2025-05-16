@@ -69,9 +69,10 @@ export class MedicionesService {
   
   // New method to find measurements for a sensor from a specific date
   async findBySensorDesde(sensorId: number, desde: Date): Promise<Medicion[]> {
-    // Format date to compare with fecha field (assuming fecha is YYYY-MM-DD format)
-    const fechaDesde = desde.toISOString().split('T')[0];
-    const horaDesde = desde.toTimeString().substring(0, 8); // HH:MM:SS format
+    // Format date to preserve local date (YYYY-MM-DD format)
+    const fechaDesde = `${desde.getFullYear()}-${String(desde.getMonth() + 1).padStart(2, '0')}-${String(desde.getDate()).padStart(2, '0')}`;
+    // Format time in HH:MM:SS format
+    const horaDesde = `${String(desde.getHours()).padStart(2, '0')}:${String(desde.getMinutes()).padStart(2, '0')}:${String(desde.getSeconds()).padStart(2, '0')}`;
     
     return this.medicionesRepository
       .createQueryBuilder('medicion')
@@ -210,18 +211,8 @@ export class MedicionesService {
     this.logger.log(`Información de zona horaria: ${JSON.stringify(tzInfo)}`);
     
     // Paso 2: Determinar la fecha "desde" para la consulta
-    if (desde) {
-      // Si se proporciona una fecha/hora específica, usarla
-      desdeDate = new Date(desde);
-    } else {
-      // Si no se proporciona fecha, calcular 3 horas atrás desde la hora actual del cliente
-      desdeDate = new Date(clientNow.getTime() - (3 * 60 * 60 * 1000));
-    }
+    desdeDate = new Date(clientNow.getTime() - (3 * 60 * 60 * 1000));
         
-    // Formatear la fecha para las consultas en la base de datos
-    const fechaDesde = desdeDate.toISOString().split('T')[0]; // YYYY-MM-DD
-    const horaDesde = desdeDate.toTimeString().substring(0, 8); // HH:MM:SS
-    
     // Verificar que el centro existe
     const centro = await this.centrosService.findOne(centroId);
     if (!centro) {
