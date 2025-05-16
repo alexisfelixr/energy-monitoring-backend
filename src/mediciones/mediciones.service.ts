@@ -67,20 +67,56 @@ export class MedicionesService {
     });
   }
   
+  obtenerFechasMexicoCDMX() {
+    // 1. Crear Date con hora local convertida a CDMX
+    const ahoraLocal = new Date();
+    const ahoraCDMX = new Date(
+      ahoraLocal.toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
+    );
+  
+    // 2. Restar 3 horas
+    const menosTres = new Date(ahoraCDMX.getTime() - 3 * 60 * 60 * 1000);
+  
+    // 3. Función auxiliar para formatear con ceros
+    const pad = n => n.toString().padStart(2, '0');
+  
+    // 4. Extraer YYYY-MM-DD y HH:mm:ss de un Date
+    const formatear = dt => ({
+      fecha: [
+        dt.getFullYear(),
+        pad(dt.getMonth() + 1),
+        pad(dt.getDate())
+      ].join('-'),
+      hora: [
+        pad(dt.getHours()),
+        pad(dt.getMinutes()),
+        pad(dt.getSeconds())
+      ].join(':')
+    });
+  
+    const actual = formatear(ahoraCDMX);
+    const atras = formatear(menosTres);
+  
+    return {
+      fechaActual: actual.fecha,
+      horaActual: actual.hora,
+      fechaMenosTres: atras.fecha,
+      horaMenosTres: atras.hora
+    };
+  }
   // New method to find measurements for a sensor from a specific date
-  async findBySensorDesde(sensorId: number, desde: Date): Promise<Medicion[]> {
-    // Format date to preserve local date (YYYY-MM-DD format)
-    const fechaDesde = `${desde.getFullYear()}-${String(desde.getMonth() + 1).padStart(2, '0')}-${String(desde.getDate()).padStart(2, '0')}`;
-    // Format time in HH:MM:SS format
-    const horaDesde = `${String(desde.getHours()).padStart(2, '0')}:${String(desde.getMinutes()).padStart(2, '0')}:${String(desde.getSeconds()).padStart(2, '0')}`;
-    
+  async findBySensorDesde(sensorId: number): Promise<Medicion[]> {
+
+    const { fechaActual, horaActual, fechaMenosTres, horaMenosTres } = this.obtenerFechasMexicoCDMX();
+
     return this.medicionesRepository
       .createQueryBuilder('medicion')
       .where('medicion.sensorId = :sensorId', { sensorId })
       .andWhere(
         // Compare by date and time to get all records after 'desde'
-        '(medicion.date > :fechaDesde OR (medicion.date = :fechaDesde AND medicion.hora >= :horaDesde))',
-        { fechaDesde, horaDesde }
+        '(medicion.date >= :fechaMenosTres AND medicion.hora >= :horaMenosTres) AND (medicion.date <= :fechaActual AND medicion.hora <= :horaActual)',
+        // '(medicion.date > :fechaDesde OR (medicion.date = :fechaDesde AND medicion.hora >= :horaDesde))',
+        { fechaMenosTres, horaMenosTres, fechaActual, horaActual }
       )
       .orderBy('medicion.date', 'ASC')
       .addOrderBy('medicion.hora', 'ASC')
@@ -124,13 +160,12 @@ export class MedicionesService {
   }
   
   // New method to get sensor summary from a specific date
-  async getResumenPorSensorDesde(sensorId: number, desde: Date): Promise<any> {
-    const mediciones = await this.findBySensorDesde(sensorId, desde);
+  async getResumenPorSensorDesde(sensorId: number): Promise<any> {
+    const mediciones = await this.findBySensorDesde(sensorId);
     
     if (mediciones.length === 0) {
       return {
         sensorId,
-        desde: desde.toISOString(),
         promedioVoltaje: 0,
         promedioCorriente: 0,
         potenciaTotal: 0,
@@ -152,7 +187,6 @@ export class MedicionesService {
     
     return {
       sensorId,
-      desde: desde.toISOString(),
       promedioVoltaje,
       promedioCorriente,
       potenciaTotal,
@@ -181,38 +215,8 @@ export class MedicionesService {
   }
 
   // Método para obtener todos los datos de monitoreo de un centro
-  async getCentroMonitoringData(centroId: number, desde?: string, timezoneOffset?: string, timezone?: string): Promise<any> {
-    // Obtener la fecha actual y ajustar por la zona horaria del cliente
-    let desdeDate: Date;
-    let clientNow: Date; // La hora actual del cliente para filtrar datos futuros
-    
-    // Paso 1: SIEMPRE usar la zona horaria de CDMX (America/Mexico_City)
-    const serverNow = new Date();
-    
-    // CDMX está en UTC-6 (-360 minutos)
-    const cdmxOffset = -360;
-    
-    // Calcular la diferencia entre la zona horaria del servidor y CDMX
-    const serverOffset = serverNow.getTimezoneOffset();
-    const offsetDiff = serverOffset - cdmxOffset; // Diferencia en minutos
-    
-    // Ajustar la hora actual según la zona horaria de CDMX
-    clientNow = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
-    
-    this.logger.log(`Usando zona horaria CDMX (UTC-6). Ajuste: ${offsetDiff} minutos. Hora cliente: ${clientNow.toISOString()}`);
-    
-    // Añadir información sobre la zona horaria utilizada
-    const tzInfo = {
-      timezone: 'America/Mexico_City',
-      offset: cdmxOffset,
-      serverTime: serverNow.toISOString(),
-      cdmxTime: clientNow.toISOString()
-    };
-    this.logger.log(`Información de zona horaria: ${JSON.stringify(tzInfo)}`);
-    
-    // Paso 2: Determinar la fecha "desde" para la consulta
-    desdeDate = new Date(clientNow.getTime() - (3 * 60 * 60 * 1000));
-        
+  async getCentroMonitoringData(centroId: number): Promise<any> {
+
     // Verificar que el centro existe
     const centro = await this.centrosService.findOne(centroId);
     if (!centro) {
@@ -222,12 +226,6 @@ export class MedicionesService {
     // Obtener todos los sensores asociados al centro
     const sensores = await this.sensoresService.findByCentro(centroId);
     
-    // Formatear la hora actual del cliente para comparar con los registros
-    const clientNowFormatted = {
-      fecha: clientNow.toISOString().split('T')[0],
-      hora: clientNow.toTimeString().substring(0, 8)
-    };
-        
     // Variables para almacenar los datos consolidados
     const voltajeCorrienteSeries: Array<{fecha: string, hora: string, voltaje: number, corriente: number}> = [];
     const dispositivos: Array<{id: number, nombre: string, estado: string, ultimaActualizacion: string, consumo: number}> = [];
@@ -241,26 +239,8 @@ export class MedicionesService {
       const sensorEstado = 'activo'; // Por defecto asumimos activo
       
       // Obtener mediciones recientes para el sensor desde la fecha indicada
-      const todasMediciones = await this.findBySensorDesde(sensor.id, desdeDate);
-      
-      // Filtrar para eliminar mediciones con fecha/hora futura respecto al cliente
-      const mediciones = todasMediciones.filter(m => {
-        // Convertir la fecha a string si es un objeto Date
-        const medicionFecha = typeof m.date === 'object' ? 
-          m.date.toISOString().split('T')[0] : String(m.date);
-        
-        // Si son de días anteriores, incluirlas
-        if (medicionFecha < clientNowFormatted.fecha) return true;
-        
-        // Si son del mismo día, verificar la hora
-        if (medicionFecha === clientNowFormatted.fecha) {
-          return m.hora <= clientNowFormatted.hora;
-        }
-        
-        // Excluir fechas futuras
-        return false;
-      });
-            
+      const mediciones = await this.findBySensorDesde(sensor.id);
+         
       if (mediciones.length > 0) {
         // Si es el primer sensor, usar sus datos para el gráfico de voltaje y corriente
         if (voltajeCorrienteSeries.length === 0) {

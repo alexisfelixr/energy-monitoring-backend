@@ -130,25 +130,10 @@ export class MedicionesController {
 
   @Get('centro/:centroId/monitoring')
   @ApiOperation({ summary: 'Obtener todos los datos de monitoreo para un centro específico' })
-  @ApiQuery({
-    name: 'desde',
-    required: false,
-    type: String,
-    description: 'Fecha y hora ISO desde la cual obtener datos (default: 3 horas atrás)'
-  })
-  @ApiQuery({
-    name: 'timezoneOffset',
-    required: false,
-    type: Number,
-    description: 'Offset de zona horaria del cliente en minutos (ejemplo: -420 para UTC-7)'
-  })
   @ApiResponse({ status: 200, description: 'Datos de monitoreo del centro' })
   @ApiResponse({ status: 404, description: 'Centro no encontrado' })
   async getCentroMonitoringData(
     @Param('centroId') centroId: string,
-    @Query('desde') desde?: string,
-    @Query('timezoneOffset') timezoneOffset?: string,
-    @Query('timezone') timezone?: string,
   ): Promise<any> {
     const numericId = Number(centroId);
     
@@ -156,6 +141,6 @@ export class MedicionesController {
       // throw new NotFoundException(`ID de centro inválido: ${centroId}`);
     }
     
-    return this.medicionesService.getCentroMonitoringData(numericId, desde, timezoneOffset, timezone);
+    return this.medicionesService.getCentroMonitoringData(numericId);
   }
 }
