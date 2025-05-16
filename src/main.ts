@@ -28,6 +28,17 @@ async function bootstrap() {
     .addTag('Mediciones')
     .addTag('Auth')
     .addTag('Generadores')
+    .addBearerAuth(
+      { 
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Ingresa tu token JWT aquí',
+        in: 'header'
+      },
+      'JWT-auth', // Nombre para hacer referencia a este esquema de seguridad
+    )
     .build();
   
   const document = SwaggerModule.createDocument(app, config);

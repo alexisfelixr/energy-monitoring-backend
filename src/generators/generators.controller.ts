@@ -1,8 +1,11 @@
-import { Controller, Post, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { FakeMedicionesService } from './fake-mediciones.service';
 
 @ApiTags('Generadores')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @Controller('generators')
 export class GeneratorsController {
   constructor(private readonly fakeMedicionesService: FakeMedicionesService) {}
@@ -11,7 +14,7 @@ export class GeneratorsController {
   @ApiOperation({ summary: 'Generar mediciones falsas manualmente' })
   @ApiResponse({ status: 200, description: 'Mediciones generadas correctamente' })
   async generateMediciones() {
-    return this.fakeMedicionesService.generateFakeMedicionesOnDemand();
+    return this.fakeMedicionesService.generatePastFiveDaysData();
   }
   
   @Get('next-execution')
@@ -37,12 +40,5 @@ export class GeneratorsController {
       timeUntilNextExecution: `${Math.floor((nextExecution.getTime() - now.getTime()) / 60000)} minutos`,
       schedule: 'Cada 15 minutos (00, 15, 30, 45)',
     };
-  }
-  
-  @Post('historical-data')
-  @ApiOperation({ summary: 'Generar datos históricos para las últimas 3 horas en intervalos de 15 minutos' })
-  @ApiResponse({ status: 200, description: 'Datos históricos generados correctamente' })
-  async generateHistoricalData() {
-    return this.fakeMedicionesService.generateHistoricalData();
   }
 }

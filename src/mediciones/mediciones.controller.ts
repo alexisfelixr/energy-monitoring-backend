@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, NotFoundException, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { MedicionesService } from './mediciones.service';
 import { CreateMedicionDto } from './dto/create-medicion.dto';
 import { UpdateMedicionDto } from './dto/update-medicion.dto';
@@ -7,6 +8,8 @@ import { Medicion } from './entities/medicion.entity';
 import { FilterMedicionesDto } from './dto/filter-mediciones.dto';
 
 @ApiTags('Mediciones')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @Controller('mediciones')
 export class MedicionesController {
   constructor(private readonly medicionesService: MedicionesService) {}
