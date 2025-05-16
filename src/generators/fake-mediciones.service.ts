@@ -42,8 +42,18 @@ export class FakeMedicionesService implements OnModuleInit {
         return;
       }
       
-      // Obtener la hora actual
-      const now = new Date();
+      // Obtener la hora actual en zona horaria de CDMX
+      const serverNow = new Date();
+      
+      // CDMX está en UTC-6 (-360 minutos)
+      const cdmxOffset = -360;
+      const serverOffset = serverNow.getTimezoneOffset();
+      const offsetDiff = serverOffset - cdmxOffset; // Diferencia en minutos
+      
+      // Ajustar la hora actual según la zona horaria de CDMX
+      const now = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
+      
+      this.logger.log(`Usando zona horaria CDMX (UTC-6). Hora ajustada: ${now.toISOString()}`);
       
       // Redondear al intervalo de 15 minutos actual
       const actualMinute = now.getMinutes();
@@ -186,8 +196,18 @@ export class FakeMedicionesService implements OnModuleInit {
         return { message: 'No se encontraron sensores para generar datos' };
       }
       
-      // Obtener la fecha y hora actual
-      const now = new Date();
+      // Obtener la fecha y hora actual en zona horaria de CDMX
+      const serverNow = new Date();
+      
+      // CDMX está en UTC-6 (-360 minutos)
+      const cdmxOffset = -360;
+      const serverOffset = serverNow.getTimezoneOffset();
+      const offsetDiff = serverOffset - cdmxOffset; // Diferencia en minutos
+      
+      // Ajustar la hora actual según la zona horaria de CDMX
+      const now = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
+      
+      this.logger.log(`Generando datos históricos usando zona horaria CDMX. Hora ajustada: ${now.toISOString()}`);
       
       // Determinar la hora anterior a la actual
       const oneHourAgo = new Date(now);

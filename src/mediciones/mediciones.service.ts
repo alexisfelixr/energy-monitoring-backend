@@ -185,43 +185,29 @@ export class MedicionesService {
     let desdeDate: Date;
     let clientNow: Date; // La hora actual del cliente para filtrar datos futuros
     
-    // Paso 1: Calcular la hora actual del cliente con prioridad a CDMX
+    // Paso 1: SIEMPRE usar la zona horaria de CDMX (America/Mexico_City)
     const serverNow = new Date();
     
-    // Si se especifica la zona horaria de CDMX, usarla con prioridad
-    if (timezone === 'America/Mexico_City' || timezoneOffset === '-360') {
-      // CDMX está en UTC-6 (-360 minutos)
-      const cdmxOffset = -360;
-      
-      // Calcular la diferencia entre la zona horaria del servidor y CDMX
-      const serverOffset = serverNow.getTimezoneOffset();
-      const offsetDiff = serverOffset - cdmxOffset; // Diferencia en minutos
-      
-      // Ajustar la hora actual según la zona horaria de CDMX
-      clientNow = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
-      
-      this.logger.log(`Usando zona horaria CDMX (UTC-6). Ajuste: ${offsetDiff} minutos. Hora cliente: ${clientNow.toISOString()}`);
-    } else if (timezoneOffset) {
-      // Si no es CDMX pero hay un offset, usarlo
-      const offsetMinutes = parseInt(timezoneOffset, 10);
-      
-      // Calcular la diferencia entre la zona horaria del servidor y la del cliente
-      const serverOffset = serverNow.getTimezoneOffset();
-      const clientOffset = offsetMinutes;
-      const offsetDiff = serverOffset - clientOffset; // Diferencia en minutos
-      
-      // Ajustar la hora actual según la zona horaria del cliente
-      clientNow = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
-      this.logger.log(`Usando offset personalizado: ${offsetMinutes} minutos. Hora cliente: ${clientNow.toISOString()}`);
-    } else {
-      // Si no hay offset ni zona horaria, usar UTC-6 para CDMX por defecto
-      const cdmxOffset = -360; // -6 horas para CDMX
-      const serverOffset = serverNow.getTimezoneOffset();
-      const offsetDiff = serverOffset - cdmxOffset;
-      
-      clientNow = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
-      this.logger.log(`Usando zona horaria CDMX por defecto. Hora cliente: ${clientNow.toISOString()}`);
-    }
+    // CDMX está en UTC-6 (-360 minutos)
+    const cdmxOffset = -360;
+    
+    // Calcular la diferencia entre la zona horaria del servidor y CDMX
+    const serverOffset = serverNow.getTimezoneOffset();
+    const offsetDiff = serverOffset - cdmxOffset; // Diferencia en minutos
+    
+    // Ajustar la hora actual según la zona horaria de CDMX
+    clientNow = new Date(serverNow.getTime() + (offsetDiff * 60 * 1000));
+    
+    this.logger.log(`Usando zona horaria CDMX (UTC-6). Ajuste: ${offsetDiff} minutos. Hora cliente: ${clientNow.toISOString()}`);
+    
+    // Añadir información sobre la zona horaria utilizada
+    const tzInfo = {
+      timezone: 'America/Mexico_City',
+      offset: cdmxOffset,
+      serverTime: serverNow.toISOString(),
+      cdmxTime: clientNow.toISOString()
+    };
+    this.logger.log(`Información de zona horaria: ${JSON.stringify(tzInfo)}`);
     
     // Paso 2: Determinar la fecha "desde" para la consulta
     if (desde) {
